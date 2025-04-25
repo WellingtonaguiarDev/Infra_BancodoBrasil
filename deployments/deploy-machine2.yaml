@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: machine2
+spec:
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: machine1
+  template:
+    metadata:
+      labels:
+        app: machine1
+    spec:
+      containers:
+        - name: machine2
+          image: machine2-image  
+          env:
+            - name: GPU_ID
+              value: "GPU_0"
+            - name: CSV_PATH
+              value: "/app/metrics.csv"
+            - name: UPDATE_INTERVAL
+              value: "5"  
+          ports:
+            - containerPort: 8000
