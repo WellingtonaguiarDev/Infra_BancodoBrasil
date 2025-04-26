@@ -1,7 +1,7 @@
 # Simulador de Métricas
 
-[![Docker Hub](https://img.shields.io/badge/DockerHub-aguiarzx%2Fmachine1-blue)](https://hub.docker.com/r/aguiarzx/machine1)
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-blueviolet)](https://github.com/aguiarzx/simulador-metricas)
+[![Docker Hub](https://img.shields.io/badge/DockerHub-aguiarzx%2Fmachine1-blue)](https://hub.docker.com/r/aguiarzx/)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-blueviolet)](https://https://github.com/WellingtonaguiarDev/Infra_BancodoBrasil)
 
 Este projeto simula a exportação de métricas de GPU utilizando **containers Docker**.  
 As métricas são geradas em arquivos CSV e expostas através de um **endpoint HTTP** no padrão do **Prometheus**.
@@ -95,6 +95,6 @@ kubectl logs <nome-do-pod>
 ## 👨‍💻 Autor
 
 Feito por **Wellington Aguiar** 🚀  
-[LinkedIn](#) | [GitHub](https://github.com/aguiarzx)
+[LinkedIn](https://www.linkedin.com/in/wellington-aguiar-461287130/) | [GitHub](https://github.com/WellingtonaguiarDev)
 
 ---
