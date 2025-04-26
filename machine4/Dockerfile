@@ -7,4 +7,4 @@ COPY metrics.csv /app/
 
 RUN pip install pandas prometheus_client
 
-CMD ["python", "script.py"]
+CMD ["python", "metrics_exporter.py"]

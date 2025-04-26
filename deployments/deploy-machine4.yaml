@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: machine4
-          image: machine4-image  
+          image: aguiarzx/machine4:latest 
           env:
             - name: GPU_ID
               value: "GPU_0"
