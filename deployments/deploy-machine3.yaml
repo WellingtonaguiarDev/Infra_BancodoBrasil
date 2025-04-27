@@ -16,8 +16,6 @@ spec:
         - name: machine3
           image: aguiarzx/machine3:latest  
           env:
-            - name: GPU_ID
-              value: "GPU_0"
             - name: CSV_PATH
               value: "/app/metrics.csv"
             - name: UPDATE_INTERVAL
