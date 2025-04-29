@@ -6,11 +6,11 @@ spec:
   replicas: 1  
   selector:
     matchLabels:
-      app: machine1
+      app: machine2
   template:
     metadata:
       labels:
-        app: machine1
+        app: machine2
     spec:
       containers:
         - name: machine2
