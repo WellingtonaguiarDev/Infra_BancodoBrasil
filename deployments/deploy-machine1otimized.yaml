@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: machine1otimized
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: machine1otimized
+  template:
+    metadata:
+      labels:
+        app: machine1otimized
+    spec:
+      containers:
+        - name: machine1otimized
+          image: aguiarzx/machine1otimized:latest
+          env:
+            - name: CSV_PATH
+              value: "/app/metrics.csv"
+            - name: UPDATE_INTERVAL
+              value: "5"  
+          ports:
+            - containerPort: 8000
