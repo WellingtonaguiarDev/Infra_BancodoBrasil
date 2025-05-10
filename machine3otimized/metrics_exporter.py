@@ -5,18 +5,19 @@ from prometheus_client import Gauge, start_http_server
 
 # Configurações
 CSV_PATH = os.getenv("CSV_PATH", "metrics.csv")
-UPDATE_INTERVAL = int(os.getenv("UPDATE_INTERVAL", 5))  # Intervalo padrão de 5 segundos
+UPDATE_INTERVAL = int(os.getenv("UPDATE_INTERVAL", 5))  # Intervalo em segundos
 GPUS = ["GPU_0", "GPU_1", "GPU_2", "GPU_3"]
 
-# Parâmetros de Balanceamento
+# Limites máximos por métrica
 MAX_METRICS = {
-    'gpu_utilization': 65,
-    'memory_utilization': 70,
-    'gpu_temperature': 70,
-    'gpu_power_draw': 150,
-    'gpu_fan_speed': 90
+    'gpu_utilization': 55,
+    'memory_utilization': 60,
+    'gpu_temperature': 60,
+    'gpu_power_draw': 130,
+    'gpu_fan_speed': 75
 }
 
+# Pesos de prioridade para cálculo de score
 PRIORITY_WEIGHTS = {
     'gpu_temperature': 0.4,
     'gpu_utilization': 0.3,
@@ -24,12 +25,12 @@ PRIORITY_WEIGHTS = {
     'gpu_power_draw': 0.1
 }
 
-# Carrega os dados
+# Carrega o CSV
 df = pd.read_csv(CSV_PATH)
 df['timestamp'] = pd.to_datetime(df['timestamp'])
 timestamps = df['timestamp'].unique()
 
-# Cria as métricas com sufixo _optimized
+# Inicializa o Prometheus
 metrics = {
     'gpu': {
         'utilization': {gpu: Gauge(f'{gpu.lower()}_utilization_optimized', f'Utilização otimizada da {gpu} (%)') for gpu in GPUS},
@@ -50,7 +51,9 @@ metrics = {
 }
 
 start_http_server(8000)
-print("Monitoramento otimizado iniciado...")
+print("Monitoramento otimizado iniciado em http://localhost:8000")
+
+# --- FUNÇÕES ---
 
 def calculate_gpu_score(row):
     score = 0
@@ -60,52 +63,52 @@ def calculate_gpu_score(row):
     return score
 
 def balance_current_load(current_data):
-    scores = current_data.apply(calculate_gpu_score, axis=1)
-    overloaded = current_data[scores > 1]
+    current_data['score'] = current_data.apply(calculate_gpu_score, axis=1)
+
+    overloaded = current_data[current_data['score'] > 1]
+    underloaded = current_data[current_data['score'] <= 1]
 
     if not overloaded.empty:
-        excess = {}
-        for metric in PRIORITY_WEIGHTS:
-            total = current_data[metric].sum()
-            excess[metric] = total - (MAX_METRICS[metric] * len(GPUS))
+        reclaimed = {metric: 0 for metric in PRIORITY_WEIGHTS}
 
-        for idx, row in current_data.iterrows():
-            if row['gpu_id'] in overloaded['gpu_id'].values:
-                for metric in PRIORITY_WEIGHTS:
-                    current_data.at[idx, metric] = min(row[metric], MAX_METRICS[metric])
+        for idx, row in overloaded.iterrows():
+            for metric in PRIORITY_WEIGHTS:
+                diff = row[metric] - MAX_METRICS[metric]
+                if diff > 0:
+                    reclaimed[metric] += diff
+                    current_data.at[idx, metric] = MAX_METRICS[metric]
 
-        underloaded = current_data[~current_data['gpu_id'].isin(overloaded['gpu_id'])]
-        for metric, excess_value in excess.items():
-            if excess_value > 0 and not underloaded.empty:
-                per_gpu = excess_value / len(underloaded)
-                for idx in underloaded.index:
-                    current_data.at[idx, metric] = min(
-                        current_data.at[idx, metric] + per_gpu,
-                        MAX_METRICS[metric]
-                    )
+        if not underloaded.empty:
+            for metric, reclaim in reclaimed.items():
+                if reclaim > 0:
+                    per_gpu = reclaim / len(underloaded)
+                    for idx in underloaded.index:
+                        atual = current_data.at[idx, metric]
+                        current_data.at[idx, metric] = min(atual + per_gpu, MAX_METRICS[metric])
 
+    current_data.drop(columns=["score"], inplace=True)
     return current_data
+
+# --- LOOP PRINCIPAL ---
 
 i = 0
 while True:
     current_time = timestamps[i]
     current_data = df[df['timestamp'] == current_time].copy()
 
-    # Aplica balanceamento
     balanced_data = balance_current_load(current_data)
 
-    # Atualiza métricas das GPUs
     for gpu in GPUS:
-        gpu_data = balanced_data[balanced_data['gpu_id'] == gpu].iloc[0]
+        gpu_row = balanced_data[balanced_data['gpu_id'] == gpu]
+        if not gpu_row.empty:
+            gpu_data = gpu_row.iloc[0]
+            metrics['gpu']['utilization'][gpu].set(gpu_data['gpu_utilization'])
+            metrics['gpu']['memory_utilization'][gpu].set(gpu_data['memory_utilization'])
+            metrics['gpu']['power_draw'][gpu].set(gpu_data['gpu_power_draw'])
+            metrics['gpu']['temperature'][gpu].set(gpu_data['gpu_temperature'])
+            metrics['gpu']['fan_speed'][gpu].set(gpu_data['gpu_fan_speed'])
+            metrics['gpu']['clock_speed'][gpu].set(gpu_data['gpu_clock_speed'])
 
-        metrics['gpu']['utilization'][gpu].set(gpu_data['gpu_utilization'])
-        metrics['gpu']['memory_utilization'][gpu].set(gpu_data['memory_utilization'])
-        metrics['gpu']['power_draw'][gpu].set(gpu_data['gpu_power_draw'])
-        metrics['gpu']['temperature'][gpu].set(gpu_data['gpu_temperature'])
-        metrics['gpu']['fan_speed'][gpu].set(gpu_data['gpu_fan_speed'])
-        metrics['gpu']['clock_speed'][gpu].set(gpu_data['gpu_clock_speed'])
-
-    # Atualiza métricas do servidor
     server_data = balanced_data.iloc[0]
     metrics['server']['cpu_utilization'].set(server_data['cpu_utilization'])
     metrics['server']['memory_usage'].set(server_data['memory_usage'])
