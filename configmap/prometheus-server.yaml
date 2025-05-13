@@ -32,6 +32,10 @@ data:
         - 'svc-machine2.default.svc.cluster.local:8000'
         - 'svc-machine3.default.svc.cluster.local:8000'
         - 'svc-machine4.default.svc.cluster.local:8000'
+        - 'svc-machine1otimized.default.svc.cluster.local:8000'
+        - 'svc-machine2otimized.default.svc.cluster.local:8000'
+        - 'svc-machine3otimized.default.svc.cluster.local:8000'
+        - 'svc-machine4otimized.default.svc.cluster.local:8000'
       scrape_interval: 5s
     - bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       job_name: kubernetes-apiservers
